@@ -1236,8 +1236,8 @@ add_resource_no_matter_slashes(EmptyBooster, '/empty-booster')
 add_resource_no_matter_slashes(RecommendationFB, '/recommendation_feedback/<ecosystem>')
 
 
-@api_v1.errorhandler(HTTPError)
-def handle_http_error(err):
+@api_v1.app_errorhandler(HTTPError)
+def coreapi_http_error_handler(err):
     """Handle HTTPError exceptions."""
     return jsonify({'error': err.error}), err.status_code
 
