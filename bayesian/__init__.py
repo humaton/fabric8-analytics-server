@@ -79,7 +79,11 @@ def create_app(configfile=None):
                 return handler(e)
         return Response(e.error, status=e.status_code)
 
-    setup_logging(app)
+    @api_v1.errorhandler(HTTPError)
+    def coreapi_http_error_handler(err):
+        """Handle HTTPError exceptions."""
+        return jsonify({'error': err.error}), err.status_code
+        setup_logging(app)
 
     @app.before_request
     def set_current_user():

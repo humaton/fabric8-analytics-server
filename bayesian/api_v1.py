@@ -1235,13 +1235,6 @@ add_resource_no_matter_slashes(CoreDependencies, '/get-core-dependencies/<runtim
 add_resource_no_matter_slashes(EmptyBooster, '/empty-booster')
 add_resource_no_matter_slashes(RecommendationFB, '/recommendation_feedback/<ecosystem>')
 
-
-@api_v1.app_errorhandler(HTTPError)
-def coreapi_http_error_handler(err):
-    """Handle HTTPError exceptions."""
-    return jsonify({'error': err.error}), err.status_code
-
-
 @api_v1.errorhandler(AuthError)
 def api_401_handler(err):
     """Handle AuthError exceptions."""
