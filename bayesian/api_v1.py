@@ -2,34 +2,38 @@
 
 import datetime
 import functools
-import uuid
-import re
-import urllib
-import tempfile
 import json
-
+import os
+import re
+import tempfile
+import urllib
+import uuid
 from collections import defaultdict
 
 import botocore
-from requests_futures.sessions import FuturesSession
+from fabric8a_auth.auth import login_required
 from flask import Blueprint, current_app, request, url_for, Response, g
 from flask.json import jsonify
 from flask_restful import Api, Resource, reqparse
-from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.dialects.postgresql import insert
+from requests_futures.sessions import FuturesSession
 from selinon import StoragePool
+from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.exc import SQLAlchemyError
 
+from f8a_worker.manifests import get_manifest_descriptor_by_filename
 from f8a_worker.models import (
     Ecosystem, StackAnalysisRequest, RecommendationFeedback)
 from f8a_worker.schemas import load_all_worker_schemas, SchemaRef
+from f8a_worker.storages import AmazonS3
 from f8a_worker.utils import (MavenCoordinates, case_sensitivity_transform)
-from f8a_worker.manifests import get_manifest_descriptor_by_filename
-
 from . import rdb, cache
-from .dependency_finder import DependencyFinder
-from fabric8a_auth.auth import login_required
 from .auth import get_access_token
+from .default_config import GEMINI_SERVER_URL
+from .dependency_finder import DependencyFinder
 from .exceptions import HTTPError
+from .generate_manifest import PomXMLTemplate
+from .license_extractor import extract_licenses
+from .manifest_models import MavenPom
 from .schemas import load_all_server_schemas
 from .utils import (get_system_version, retrieve_worker_result, get_cve_data,
                     server_create_component_bookkeeping, build_nested_schema_dict,
@@ -40,23 +44,14 @@ from .utils import (get_system_version, retrieve_worker_result, get_cve_data,
                     is_valid, select_latest_version, get_categories_data, get_core_dependencies,
                     create_directory_structure, push_repo, get_booster_core_repo,
                     get_recommendation_feedback_by_ecosystem)
-from .license_extractor import extract_licenses
-from .manifest_models import MavenPom
-
-import os
-from f8a_worker.storages import AmazonS3
-from .generate_manifest import PomXMLTemplate
-from .default_config import GEMINI_SERVER_URL
-from fabric8a_auth.errors import AuthError
-
 
 # TODO: improve maintainability index
 errors = {
-        'AuthError': {
-                         'status': 401,
-                         'message': 'Authentication failed',
-                         'some_description': 'Authentication failed'
-                     }}
+    'AuthError': {
+        'status': 401,
+        'message': 'Authentication failed',
+        'some_description': 'Authentication failed'
+    }}
 
 api_v1 = Blueprint('api_v1', __name__, url_prefix='/api/v1')
 rest_api_v1 = Api(api_v1, errors=errors)
@@ -131,6 +126,7 @@ def get_items_for_page(items, page, per_page):
 
 def paginated(func):
     """Provide paginated output for longer responses."""
+
     @functools.wraps(func)
     def inner(*args, **kwargs):
         func_res = func(*args, **kwargs)
@@ -141,7 +137,7 @@ def paginated(func):
             elif len(res) == 2:
                 res, code = func_res
             else:
-                raise HTTPError('Internal error', 500)
+        # raise HTTPError('Internal error', 500)
 
         args = pagination_parser.parse_args()
         page, per_page = args['page'], args['per_page']
@@ -224,7 +220,7 @@ class ResourceWithSchema(Resource):
             }
         return response
 
-   
+
 class ApiEndpoints(ResourceWithSchema):
     """Implementation of / REST API call."""
 
@@ -720,14 +716,13 @@ class StackAnalyses(ResourceWithSchema):
                 if dependency_files:
                     files = list()
                     for dependency_file in dependency_files:
-
                         # http://docs.python-requests.org/en/master/user/advanced/#post-multiple-multipart-encoded-files
                         files.append((
-                                dependency_file.name, (
-                                    dependency_file.filename,
-                                    dependency_file.read(),
-                                    'text/plain'
-                                )
+                            dependency_file.name, (
+                                dependency_file.filename,
+                                dependency_file.read(),
+                                'text/plain'
+                            )
                         ))
 
                     _session.headers['Authorization'] = request.headers.get('Authorization')
