@@ -1,4 +1,5 @@
 """Representation of HTTP error."""
+from flask import json
 
 
 class HTTPError(Exception):
@@ -18,3 +19,7 @@ class HTTPError(Exception):
         Exception.__init__(self)
         self.status_code = status_code
         self.error = error
+
+    def toJSON(self):
+        return json.dumps(self, default=lambda o: o.__dict__,
+                          sort_keys=True, indent=4)
