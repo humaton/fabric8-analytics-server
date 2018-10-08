@@ -17,7 +17,7 @@ SQLALCHEMY_DATABASE_URI = worker_configuration.POSTGRES_CONNECTION
 ERROR_404_HELP = False
 
 JSONIFY_PRETTYPRINT_REGULAR = True
-RESTFUL_JSON = {'default': json_serial, 'indent': 4, 'separators': (',', ': ')}
+#RESTFUL_JSON = {'default': json_serial, 'indent': 4, 'separators': (',', ': ')}
 
 # Don't do this in production!
 SECRET_KEY = 'devkey'
