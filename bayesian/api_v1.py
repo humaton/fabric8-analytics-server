@@ -224,25 +224,7 @@ class ResourceWithSchema(Resource):
             }
         return response
 
-    def dispatch_request(self, *args, **kwargs):
-        """Perform the request dispatching based on the standard Flask dispatcher."""
-        response = super().dispatch_request(*args, **kwargs)
-
-        method = request.method
-        status_code = 200
-        response_body = response
-        headers = None
-
-        if isinstance(response, tuple):
-            response_body = response[0]
-            if len(response) > 1:
-                status_code = response[1]
-            if len(response) > 2:
-                headers = response[2]
-
-        return self.add_schema(response_body, status_code, method), status_code, headers
-
-
+   
 class ApiEndpoints(ResourceWithSchema):
     """Implementation of / REST API call."""
 
