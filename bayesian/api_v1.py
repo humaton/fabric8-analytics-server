@@ -124,44 +124,6 @@ def get_items_for_page(items, page, per_page):
     return items[get_item_skip(page, per_page):get_item_absolute_limit(page, per_page)]
 
 
-def paginated(func):
-    """Provide paginated output for longer responses."""
-
-    @functools.wraps(func)
-    def inner(*args, **kwargs):
-        func_res = func(*args, **kwargs)
-        res, code, headers = func_res, 200, {}
-        if isinstance(res, tuple):
-            if len(res) == 3:
-                res, code, headers = func_res
-            elif len(res) == 2:
-                res, code = func_res
-            else:
-        # raise HTTPError('Internal error', 500)
-
-        args = pagination_parser.parse_args()
-        page, per_page = args['page'], args['per_page']
-        count = res[TOTAL_COUNT_KEY]
-
-        previous_page = None if page == 0 else page - 1
-        next_page = None if get_item_absolute_limit(page, per_page) >= count else page + 1
-
-        view_args = request.view_args.copy()
-        view_args['per_page'] = per_page
-
-        view_args['page'] = previous_page
-        paging = []
-        if previous_page is not None:
-            paging.append({'url': url_for(request.endpoint, **view_args), 'rel': 'prev'})
-        view_args['page'] = next_page
-        if next_page is not None:
-            paging.append({'url': url_for(request.endpoint, **view_args), 'rel': 'next'})
-
-        headers['Link'] = ', '.join(['<{url}>; rel="{rel}"'.format(**d) for d in paging])
-
-        return res, code, headers
-
-    return inner
 
 
 # flask-restful doesn't actually store a list of endpoints, so we register them as they
