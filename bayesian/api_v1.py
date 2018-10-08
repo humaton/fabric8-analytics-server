@@ -1250,18 +1250,6 @@ add_resource_no_matter_slashes(EmptyBooster, '/empty-booster')
 add_resource_no_matter_slashes(RecommendationFB, '/recommendation_feedback/<ecosystem>')
 
 
-@api_v1.errorhandler(HTTPError)
-def handle_http_error(err):
-    """Handle HTTPError exceptions."""
-    return jsonify({'error': err.error}), err.status_code
-
-
-@api_v1.errorhandler(AuthError)
-def api_401_handler(err):
-    """Handle AuthError exceptions."""
-    return jsonify(error=err.error), err.status_code
-
-
 # workaround https://github.com/mitsuhiko/flask/issues/1498
 # NOTE: this *must* come in the end, unless it'll overwrite rules defined
 # after this

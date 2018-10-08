@@ -14,7 +14,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cache import Cache
 
 from f8a_worker.setup_celery import init_selinon
-
+from fabric8a_auth.errors import AuthError
 
 def setup_logging(app):
     """Set up logger, the log level is read from the environment variable."""
@@ -60,6 +60,16 @@ def create_app(configfile=None):
         return redirect(url_for('api_v1.apiendpoints__slashless'))
 
     @app.errorhandler(HTTPError)
+    def handle_http_error(err):
+        """Handle HTTPError exceptions."""
+        return jsonify({'error': err.error}), err.status_code
+
+    @app.errorhandler(AuthError)
+    def api_401_handler(err):
+        """Handle AuthError exceptions."""
+        return jsonify(error=err.error), err.status_code
+
+    @app.errorhandler(HTTPError)
     def handleerrors(e):
         bp = app.blueprints.get(request.blueprint)
         # if there's an error pre-request (e.g. during authentication) in non-GET requests,
@@ -74,7 +84,7 @@ def create_app(configfile=None):
                     bp = b
                     break
         if bp:
-            handler = getattr(bp, 'coreapi_http_error_handler', None)
+            handler = getattr(bp, 'handle_http_error', None)
             if handler:
                 return handler(e)
         return Response(e.error, status=e.status_code)
